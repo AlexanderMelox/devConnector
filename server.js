@@ -8,16 +8,17 @@ const users = require('./routes/api/users');
 const profile = require('./routes/api/profile');
 const posts = require('./routes/api/posts');
 
+// Init express
 const app = express();
 
 // Body parser middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-// DB Config
+// MongoLab DB Config
 const db = require('./config/keys').mongoURI;
 
-// Connect to MongoDB
+// Connect to MongoDB or localdev
 mongoose.connect('mongodb://localhost/devConnector' || db)
   .then(() => console.log('MongoDB Connected'))
   .catch(err => console.log(err));
