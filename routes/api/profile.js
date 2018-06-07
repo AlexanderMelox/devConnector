@@ -3,6 +3,9 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const passport = require('passport');
 
+// Load validation
+const validateProfileInput = require('../../validation/profile');
+
 // Load profile model
 const Profile = require('../../models/Profile');
 // Load user profile
@@ -22,6 +25,7 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
   const errors = {};
 
   Profile.findOne({ user: req.user.id })
+    .populate('user', ['name', 'avatar'])
     .then(profile => {
       if (!profile) {
         errors.noprofile = 'There is no profile for this user';
@@ -36,31 +40,53 @@ router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => 
 // @desc    Create or edit user profile
 // @access  Private
 router.post('/', passport.authenticate('jwt', { session: false }), (req, res) => {
+  // Destructure returned obj from validation
+  const { errors, isValid } = validateProfileInput(req.body);
+
+  // Check Validation
+  if (!isValid) {
+    // return any errors with 400 status
+    return res.status(400).json(errors);
+  }
+
   // Get fields
   const profileFields = {};
   profileFields.user = req.user.id;
-  if (req.body.handle) profileFields.handle = req.body.handle;
-  if (req.body.company) profileFields.company = req.body.company;
-  if (req.body.website) profileFields.website = req.body.website;
-  if (req.body.location) profileFields.location = req.body.location;
-  if (req.body.bio) profileFields.bio = req.body.bio;
-  if (req.body.status) profileFields.status = req.body.status;
-  if (req.body.githubUsername) profileFields.githubUsername = req.body.githubUsername;
-  // Skills - split into array
-  if (typeof req.body.skills != 'undefined') {
-    profileFields.skills = req.body.skills.split(',');
-  }
+
+  // Creates an array of the request keys
+  const profileKeys = Object.keys(req.body);
+  // Iterates through each key and assigns it to the profileFields obj
+  profileKeys.forEach(key => {
+    if (key === 'skills' && typeof req.body[key] != 'undefined') {
+      // Skills - split into array then trims any whitespace      
+      profileFields.skills = req.body[key].split(',').map(skill => skill.trim());      
+    } else if (req.body[key] && // TODO: turn this check into a function
+      (key !== 'youtube' && 
+      key !== 'twitter' && 
+      key !== 'facebook' && 
+      key !== 'linkedin' && 
+      key !== 'instagram')) {
+        profileFields[key] = req.body[key];
+    }
+  });
 
   // Social
   profileFields.social = {};
-  if (req.body.youtube) profileFields.social.youtube = req.body.youtube;
-  if (req.body.twitter) profileFields.social.twitter = req.body.twitter;
-  if (req.body.facebook) profileFields.social.facebook = req.body.facebook;
-  if (req.body.linkedin) profileFields.social.linkedin = req.body.linkedin;
-  if (req.body.instagram) profileFields.social.instagram = req.body.instagram;
+  const socialURLs = [
+    'youtube',
+    'twitter',
+    'facebook',
+    'linkedin',
+    'instagram'
+  ];
+
+  socialURLs.forEach(url => {
+    if (req.body[url]) profileFields.social[url] = req.body[url];
+  });
 
   Profile.findOne({ user: req.user.id })
     .then(profile => {
+      // If there is a profile then update the current data
       if (profile) {
         // Update
         Profile.findOneAndUpdate({ user: req.user.id }, { $set: profileFields }, { new: true })
