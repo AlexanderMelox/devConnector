@@ -72,6 +72,7 @@ router.post('/', passport.authenticate('jwt', { session: false }), (req, res) =>
 
   // Social
   profileFields.social = {};
+  // TODO: turn this data into an exports
   const socialURLs = [
     'youtube',
     'twitter',
