@@ -23,7 +23,7 @@ class Navbar extends Component {
     const authLinks = (
       <ul className="navbar-nav ml-auto">
         <li className="nav-item">
-          <a href="#" onClick={this.onLogoutClick} className="nav-link">
+          <a href="" onClick={this.onLogoutClick} className="nav-link">
             <img src={user.avatar} alt={user.name} style={avatarStyles} title="You must have a gravatar connected to your email to display an image."/>
             Logout
           </a>
